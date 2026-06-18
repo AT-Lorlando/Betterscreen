@@ -17,8 +17,11 @@ func killArgs(s Session) []string {
 }
 
 // createArgs: creates a named detached session.
+// `-T screen-256color` forces a 256-color window TERM: screen otherwise imposes
+// its own default ("screen", 8 colors) regardless of the parent environment,
+// which leaves color-gated shell prompts uncolored.
 func createArgs(name string) []string {
-	return []string{"-dmS", name}
+	return []string{"-T", "screen-256color", "-dmS", name}
 }
 
 // selectArgs: selects window n of a session (without detaching).

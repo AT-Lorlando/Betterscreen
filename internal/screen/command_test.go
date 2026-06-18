@@ -24,7 +24,7 @@ func TestKillArgs(t *testing.T) {
 
 func TestCreateArgs(t *testing.T) {
 	got := createArgs("work")
-	want := []string{"-dmS", "work"}
+	want := []string{"-T", "screen-256color", "-dmS", "work"}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got %v, want %v", got, want)
 	}
