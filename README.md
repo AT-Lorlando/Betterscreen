@@ -71,3 +71,7 @@ Inside the in-session menu:
 | `d` | Kill session (with confirmation) |
 | `r` | Refresh |
 | `q` | Quit |
+
+## License
+
+[MIT](LICENSE)
