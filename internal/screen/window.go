@@ -5,12 +5,12 @@ import (
 	"strconv"
 )
 
-// Capture: un numéro, des flags optionnels non-espaces, puis le titre.
-// Ex: "0 zsh", "1*$ vim". Les titres multi-mots ne sont pas supportés (titres
-// screen par défaut = un seul token).
+// Capture: a number, optional non-space flags, then the title.
+// E.g. "0 zsh", "1*$ vim". Multi-word titles are not supported (default
+// screen titles = a single token).
 var windowRe = regexp.MustCompile(`(\d+)\S*\s+(\S+)`)
 
-// ParseWindows transforme la sortie de `screen -Q windows` en fenêtres.
+// ParseWindows turns the output of `screen -Q windows` into windows.
 func ParseWindows(raw string) []Window {
 	var out []Window
 	for _, m := range windowRe.FindAllStringSubmatch(raw, -1) {

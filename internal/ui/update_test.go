@@ -31,7 +31,7 @@ func TestNavigateSessionsDown(t *testing.T) {
 func TestNavigateClampTop(t *testing.T) {
 	api := &fakeAPI{sessions: []screen.Session{{ID: "a"}, {ID: "b"}}}
 	m := modelWith(api)
-	next, _ := m.Update(key('k')) // déjà en haut
+	next, _ := m.Update(key('k')) // already at top
 	if next.(Model).selSession != 0 {
 		t.Errorf("selSession = %d, want 0 (clamp)", next.(Model).selSession)
 	}
@@ -63,7 +63,7 @@ func TestConfirmKillYesCallsAPI(t *testing.T) {
 		t.Errorf("killed = %q, want victim", api.killed)
 	}
 	if next.(Model).mode != modeNormal {
-		t.Errorf("mode après kill = %v, want modeNormal", next.(Model).mode)
+		t.Errorf("mode after kill = %v, want modeNormal", next.(Model).mode)
 	}
 }
 
@@ -86,7 +86,7 @@ func TestSessionsMsgUpdatesState(t *testing.T) {
 	m := New(&fakeAPI{})
 	next, _ := m.Update(sessionsMsg{sessions: []screen.Session{{ID: "x"}}})
 	if len(next.(Model).sessions) != 1 {
-		t.Errorf("sessions non mises à jour")
+		t.Errorf("sessions not updated")
 	}
 }
 
@@ -131,12 +131,12 @@ func TestSessionsMsgReloadsWindowsWhenSessionChanges(t *testing.T) {
 
 func TestEnterLauncherAttaches(t *testing.T) {
 	api := &fakeAPI{sessions: []screen.Session{{ID: "A", Name: "A", State: screen.StateDetached}}}
-	m := New(api) // mode lanceur
+	m := New(api) // launcher mode
 	m.sessions = api.sessions
 	m.windows = []screen.Window{{Num: 0}}
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd == nil || api.attachedID != "A" {
-		t.Errorf("lanceur: attendait attach A, got id=%q", api.attachedID)
+		t.Errorf("launcher: expected attach A, got id=%q", api.attachedID)
 	}
 }
 
@@ -146,13 +146,13 @@ func TestEnterInSessionSelectsCurrentWindow(t *testing.T) {
 	m.sessions = []screen.Session{{ID: "A", Name: "A", State: screen.StateAttached}}
 	m.windows = []screen.Window{{Num: 0, Title: "zsh"}, {Num: 2, Title: "vim"}}
 	m.selSession = 0
-	m.selWindow = 1 // fenêtre Num 2
+	m.selWindow = 1 // window Num 2
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if !api.selectCalled || api.selectedID != "A" || api.selectedWindow != 2 {
-		t.Errorf("attendait SelectWindow(A,2), got called=%v id=%q win=%d", api.selectCalled, api.selectedID, api.selectedWindow)
+		t.Errorf("expected SelectWindow(A,2), got called=%v id=%q win=%d", api.selectCalled, api.selectedID, api.selectedWindow)
 	}
 	if api.detachedID != "" {
-		t.Error("ne doit pas détacher quand on reste dans la session courante")
+		t.Error("must not detach when staying in the current session")
 	}
 }
 
@@ -166,10 +166,10 @@ func TestEnterInSessionJumpsToOtherSession(t *testing.T) {
 	m.selWindow = 0
 	m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if !ho.written || ho.wroteID != "B" || ho.wroteWin != 3 {
-		t.Errorf("attendait handoff(B,3), got %+v", ho)
+		t.Errorf("expected handoff(B,3), got %+v", ho)
 	}
 	if api.detachedID != "A" {
-		t.Errorf("attendait Detach(A), got %q", api.detachedID)
+		t.Errorf("expected Detach(A), got %q", api.detachedID)
 	}
 }
 
@@ -181,10 +181,10 @@ func TestEnterInSessionHandoffErrorDoesNotDetach(t *testing.T) {
 	m.windows = []screen.Window{{Num: 0}}
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if api.detachedID != "" {
-		t.Error("ne doit PAS détacher si l'écriture du handoff échoue")
+		t.Error("must NOT detach if the handoff write fails")
 	}
 	if next.(Model).err == "" {
-		t.Error("attendait un message d'erreur")
+		t.Error("expected an error message")
 	}
 }
 
@@ -194,10 +194,10 @@ func TestAttachDoneChainsHandoff(t *testing.T) {
 	m := New(api, WithHandoff(ho))
 	_, cmd := m.Update(attachDoneMsg{})
 	if cmd == nil {
-		t.Fatal("attendait une commande d'attach chaînée")
+		t.Fatal("expected a chained attach command")
 	}
 	if api.attachedID != "B" || api.attachedWin != 1 {
-		t.Errorf("attendait attach chaîné vers B fenêtre 1, got id=%q win=%d", api.attachedID, api.attachedWin)
+		t.Errorf("expected chained attach to B window 1, got id=%q win=%d", api.attachedID, api.attachedWin)
 	}
 }
 
@@ -206,24 +206,24 @@ func TestAttachDoneNoHandoffReloads(t *testing.T) {
 	m := New(api, WithHandoff(&fakeHandoff{readOK: false}))
 	_, cmd := m.Update(attachDoneMsg{})
 	if cmd == nil {
-		t.Fatal("attendait une commande de refresh")
+		t.Fatal("expected a refresh command")
 	}
 	if api.attachedID != "" {
-		t.Errorf("ne doit pas attacher sans handoff, got %q", api.attachedID)
+		t.Errorf("must not attach without a handoff, got %q", api.attachedID)
 	}
 }
 
 func TestEnterDeadSessionBlocked(t *testing.T) {
 	api := &fakeAPI{}
-	m := New(api) // mode lanceur
+	m := New(api) // launcher mode
 	m.sessions = []screen.Session{{ID: "D", State: screen.StateDead}}
 	m.windows = []screen.Window{{Num: 0}}
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if cmd != nil {
-		t.Error("session morte: enter ne doit rien déclencher")
+		t.Error("dead session: enter must not trigger anything")
 	}
 	if api.attachedID != "" {
-		t.Errorf("ne doit pas attacher une session morte, got %q", api.attachedID)
+		t.Errorf("must not attach a dead session, got %q", api.attachedID)
 	}
 }
 
@@ -232,7 +232,7 @@ func TestAttachDoneErrorSurfaced(t *testing.T) {
 	m := New(api, WithHandoff(&fakeHandoff{readOK: false}))
 	next, _ := m.Update(attachDoneMsg{err: errors.New("boom")})
 	if next.(Model).err == "" {
-		t.Error("une erreur d'attach doit être affichée à l'utilisateur")
+		t.Error("an attach error must be shown to the user")
 	}
 }
 
@@ -240,28 +240,28 @@ func TestEnterInSessionCurrentNoWindowNoop(t *testing.T) {
 	api := &fakeAPI{}
 	m := New(api, WithContext(env.Context{SessionID: "A", InSession: true}), WithHandoff(&fakeHandoff{}))
 	m.sessions = []screen.Session{{ID: "A", State: screen.StateAttached}}
-	m.windows = nil // aucune fenêtre sélectionnable
+	m.windows = nil // no selectable window
 	m.selSession = 0
 	_, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if api.selectCalled {
-		t.Error("ne doit pas SelectWindow sans fenêtre sélectionnée")
+		t.Error("must not SelectWindow without a selected window")
 	}
 	if cmd != nil {
-		t.Error("attendait un no-op (pas de Quit) sur la session courante sans fenêtre")
+		t.Error("expected a no-op (no Quit) on the current session without a window")
 	}
 }
 
 func TestEnterInSessionNilHandoffDoesNotDetach(t *testing.T) {
 	api := &fakeAPI{}
-	// in-session mais SANS WithHandoff -> m.handoff est nil
+	// in-session but WITHOUT WithHandoff -> m.handoff is nil
 	m := New(api, WithContext(env.Context{SessionID: "A", InSession: true}))
 	m.sessions = []screen.Session{{ID: "B", State: screen.StateDetached}}
 	m.windows = []screen.Window{{Num: 0}}
 	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	if api.detachedID != "" {
-		t.Error("handoff nil: ne doit PAS détacher (sinon session perdue sans cible)")
+		t.Error("nil handoff: must NOT detach (otherwise session lost with no target)")
 	}
 	if next.(Model).err == "" {
-		t.Error("attendait un message d'erreur quand le handoff est indisponible")
+		t.Error("expected an error message when the handoff is unavailable")
 	}
 }

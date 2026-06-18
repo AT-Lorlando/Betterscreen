@@ -9,7 +9,7 @@ import (
 
 const unknown = "—"
 
-// ProcFS abstrait l'accès à /proc pour la testabilité.
+// ProcFS abstracts access to /proc for testability.
 type ProcFS interface {
 	ReadDir(name string) ([]string, error)
 	ReadFile(name string) ([]byte, error)
@@ -32,7 +32,7 @@ func (osProcFS) ReadDir(name string) ([]string, error) {
 func (osProcFS) ReadFile(name string) ([]byte, error) { return os.ReadFile(name) }
 func (osProcFS) Readlink(name string) (string, error) { return os.Readlink(name) }
 
-// OSProcFS renvoie l'implémentation réelle basée sur /proc.
+// OSProcFS returns the real /proc-based implementation.
 func OSProcFS() ProcFS { return osProcFS{} }
 
 type proc struct {
@@ -42,8 +42,8 @@ type proc struct {
 	starttime int
 }
 
-// statFields parse /proc/<pid>/stat. comm peut contenir des espaces/parenthèses,
-// on isole donc la dernière ")" avant de découper le reste.
+// statFields parses /proc/<pid>/stat. comm may contain spaces/parentheses,
+// so we isolate the last ")" before splitting the rest.
 func statFields(data []byte) (proc, bool) {
 	s := string(data)
 	open := strings.IndexByte(s, '(')
@@ -57,7 +57,7 @@ func statFields(data []byte) (proc, bool) {
 	}
 	comm := s[open+1 : close]
 	rest := strings.Fields(s[close+1:])
-	// rest[0]=state, rest[1]=ppid, ... rest[19]=starttime (champ 22 global).
+	// rest[0]=state, rest[1]=ppid, ... rest[19]=starttime (global field 22).
 	if len(rest) < 20 {
 		return proc{}, false
 	}
@@ -83,7 +83,7 @@ func allProcs(fs ProcFS) []proc {
 	for _, n := range names {
 		pid, err := strconv.Atoi(n)
 		if err != nil {
-			continue // ignore les entrées non numériques
+			continue // ignore non-numeric entries
 		}
 		if p, ok := readProc(fs, pid); ok {
 			out = append(out, p)
@@ -92,7 +92,7 @@ func allProcs(fs ProcFS) []proc {
 	return out
 }
 
-// InspectAll associe best-effort chaque fenêtre à un pwd + process.
+// InspectAll best-effort maps each window to a pwd + process.
 func InspectAll(fs ProcFS, s Session, windows []Window) map[int]Detail {
 	out := make(map[int]Detail, len(windows))
 	for _, w := range windows {
@@ -107,7 +107,7 @@ func InspectAll(fs ProcFS, s Session, windows []Window) map[int]Detail {
 		}
 	}
 
-	// Mapping fiable seulement si autant d'enfants que de fenêtres.
+	// Reliable mapping only if there are as many children as windows.
 	if len(children) != len(windows) || len(windows) == 0 {
 		return out
 	}
@@ -127,7 +127,7 @@ func InspectAll(fs ProcFS, s Session, windows []Window) map[int]Detail {
 	return out
 }
 
-// foreground remonte au descendant le plus récemment démarré du shell.
+// foreground walks down to the most recently started descendant of the shell.
 func foreground(procs []proc, shell proc) string {
 	cur := shell
 	for {

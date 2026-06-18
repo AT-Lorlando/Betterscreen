@@ -6,8 +6,8 @@ import (
 	"betterscreen/internal/screen"
 )
 
-// ScreenAPI est le contrat métier injecté dans l'UI (réel = screen.Client,
-// factice en test).
+// ScreenAPI is the domain contract injected into the UI (real = screen.Client,
+// fake in tests).
 type ScreenAPI interface {
 	ListSessions() ([]screen.Session, error)
 	ListWindows(screen.Session) ([]screen.Window, error)

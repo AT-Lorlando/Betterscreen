@@ -14,7 +14,7 @@ func TestParseSessions(t *testing.T) {
 		t.Fatalf("want 3 sessions, got %d", len(got))
 	}
 	if got[0].PID != 3430249 || got[0].Name != "thcon" || got[0].ID != "3430249.thcon" {
-		t.Errorf("session 0 mal parsée: %+v", got[0])
+		t.Errorf("session 0 mis-parsed: %+v", got[0])
 	}
 	if got[0].State != StateAttached {
 		t.Errorf("session 0 state = %v, want Attached", got[0].State)

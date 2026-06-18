@@ -6,10 +6,10 @@ import (
 	"strings"
 )
 
-// lignes du type: "\t3378954.Astronix\t(18/06/2026 07:46:57)\t(Detached)"
+// lines like: "\t3378954.Astronix\t(18/06/2026 07:46:57)\t(Detached)"
 var sessionLineRe = regexp.MustCompile(`^\s*(\d+)\.(\S+)\s+\(.*?\)\s+\((.*?)\)\s*$`)
 
-// ParseSessions transforme la sortie de `screen -ls` en sessions.
+// ParseSessions turns the output of `screen -ls` into sessions.
 func ParseSessions(raw string) []Session {
 	var out []Session
 	for _, line := range strings.Split(raw, "\n") {

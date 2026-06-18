@@ -3,7 +3,7 @@ package screen
 import "testing"
 
 func TestParseWindows(t *testing.T) {
-	// format vérifié: "<num>[flags] <titre>", séparé par espaces, sans newline.
+	// verified format: "<num>[flags] <title>", space-separated, no newline.
 	got := ParseWindows("0 zsh  1*$ vim  2 logs")
 	if len(got) != 3 {
 		t.Fatalf("want 3 windows, got %d: %+v", len(got), got)

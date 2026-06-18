@@ -131,7 +131,7 @@ func (m Model) moveSelection(delta int) Model {
 	return m
 }
 
-// maybeLoadWindows recharge les fenêtres si la session sélectionnée a changé.
+// maybeLoadWindows reloads the windows if the selected session changed.
 func (m Model) maybeLoadWindows() (tea.Model, tea.Cmd) {
 	if m.focus == focusSessions {
 		if s, ok := m.currentSession(); ok && s.ID != m.loadedSessionID {
@@ -142,13 +142,13 @@ func (m Model) maybeLoadWindows() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// onEnter décide de l'action selon le mode et la cible sélectionnée.
+// onEnter decides the action based on the mode and the selected target.
 func (m Model) onEnter() (tea.Model, tea.Cmd) {
 	s, ok := m.currentSession()
 	if !ok || s.State == screen.StateDead {
 		return m, nil
 	}
-	w, wok := m.selectedWin() // note: méthode renommée en Task 4 (collision avec le champ currentWindow)
+	w, wok := m.selectedWin() // note: method renamed in Task 4 (collision with the currentWindow field)
 	win := 0
 	if wok {
 		win = w.Num
@@ -162,18 +162,18 @@ func (m Model) onEnter() (tea.Model, tea.Cmd) {
 	})
 }
 
-// jump gère le mode in-session : select-in-place si session courante,
-// sinon handoff + detach.
+// jump handles in-session mode: select-in-place if it is the current session,
+// otherwise handoff + detach.
 func (m Model) jump(s screen.Session, win int, hasWindow bool) (tea.Model, tea.Cmd) {
 	if s.ID == m.currentSessionID {
 		if !hasWindow {
-			return m, nil // aucune fenêtre sélectionnée : ne rien faire
+			return m, nil // no window selected: do nothing
 		}
 		_ = m.api.SelectWindow(m.currentSessionID, win)
 		return m, tea.Quit
 	}
 	if m.handoff == nil {
-		m.err = "handoff indisponible"
+		m.err = "handoff unavailable"
 		return m, nil
 	}
 	if err := m.handoff.Write(s.ID, win); err != nil {

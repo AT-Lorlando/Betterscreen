@@ -5,28 +5,28 @@ import (
 	"strconv"
 )
 
-// AttachCommand construit la commande d'attachement (handoff terminal).
-// `-p <num>` positionne sur la fenêtre voulue à l'attachement.
+// AttachCommand builds the attach command (terminal handoff).
+// `-p <num>` positions on the desired window upon attach.
 func AttachCommand(s Session, w Window) *exec.Cmd {
 	return exec.Command("screen", "-r", s.ID, "-p", strconv.Itoa(w.Num))
 }
 
-// killArgs : tue proprement une session (`-X quit` termine le démon).
+// killArgs: cleanly kills a session (`-X quit` terminates the daemon).
 func killArgs(s Session) []string {
 	return []string{"-S", s.ID, "-X", "quit"}
 }
 
-// createArgs : crée une session détachée nommée.
+// createArgs: creates a named detached session.
 func createArgs(name string) []string {
 	return []string{"-dmS", name}
 }
 
-// selectArgs : sélectionne la fenêtre n d'une session (sans détacher).
+// selectArgs: selects window n of a session (without detaching).
 func selectArgs(id string, n int) []string {
 	return []string{"-S", id, "-X", "select", strconv.Itoa(n)}
 }
 
-// detachArgs : détache une session.
+// detachArgs: detaches a session.
 func detachArgs(id string) []string {
 	return []string{"-S", id, "-X", "detach"}
 }

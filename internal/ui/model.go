@@ -20,7 +20,7 @@ type Model struct {
 	mode       uiMode
 	selSession int
 	selWindow  int
-	input      string // saisie du nom lors de la création
+	input      string // name input during creation
 	err        string
 
 	loadedSessionID string // ID of the session whose windows are currently loaded
@@ -33,7 +33,7 @@ type Model struct {
 	width, height int
 }
 
-// New construit le modèle initial. Les options injectent le contexte et le handoff.
+// New builds the initial model. Options inject the context and the handoff.
 func New(api ScreenAPI, opts ...Option) Model {
 	m := Model{
 		api:           api,
@@ -48,16 +48,16 @@ func New(api ScreenAPI, opts ...Option) Model {
 	return m
 }
 
-// Handoff est le canal de saut inter-session (réel = handoff.Store, fake en test).
+// Handoff is the inter-session jump channel (real = handoff.Store, fake in tests).
 type Handoff interface {
 	Write(sessionID string, window int) error
 	ReadAndClear() (sessionID string, window int, ok bool)
 }
 
-// Option configure le Model à la construction.
+// Option configures the Model at construction time.
 type Option func(*Model)
 
-// WithContext applique le contexte d'exécution (lanceur vs in-session).
+// WithContext applies the execution context (launcher vs in-session).
 func WithContext(ctx env.Context) Option {
 	return func(m *Model) {
 		m.inSession = ctx.InSession
@@ -66,12 +66,12 @@ func WithContext(ctx env.Context) Option {
 	}
 }
 
-// WithHandoff injecte le store de handoff.
+// WithHandoff injects the handoff store.
 func WithHandoff(h Handoff) Option {
 	return func(m *Model) { m.handoff = h }
 }
 
-// messages internes
+// internal messages
 type sessionsMsg struct {
 	sessions []screen.Session
 	err      error
@@ -88,7 +88,7 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(m.loadSessions(), tick())
 }
 
-// loadSessions récupère les sessions de façon asynchrone.
+// loadSessions fetches the sessions asynchronously.
 func (m Model) loadSessions() tea.Cmd {
 	return func() tea.Msg {
 		s, err := m.api.ListSessions()
@@ -96,8 +96,8 @@ func (m Model) loadSessions() tea.Cmd {
 	}
 }
 
-// loadWindows récupère fenêtres + détails pour une session. En mode in-session,
-// la fenêtre éphémère de BetterScreen (currentWindow) est retirée de la session courante.
+// loadWindows fetches windows + details for a session. In in-session mode,
+// BetterScreen's ephemeral window (currentWindow) is removed from the current session.
 func (m Model) loadWindows(s screen.Session) tea.Cmd {
 	inSession := m.inSession
 	curID := m.currentSessionID
@@ -115,7 +115,7 @@ func (m Model) loadWindows(s screen.Session) tea.Cmd {
 	}
 }
 
-// filterWindow renvoie ws privé de la fenêtre de numéro num.
+// filterWindow returns ws without the window numbered num.
 func filterWindow(ws []screen.Window, num int) []screen.Window {
 	out := make([]screen.Window, 0, len(ws))
 	for _, w := range ws {
@@ -127,12 +127,12 @@ func filterWindow(ws []screen.Window, num int) []screen.Window {
 	return out
 }
 
-// tick : polling de rafraîchissement (~2s).
+// tick: refresh polling (~2s).
 func tick() tea.Cmd {
 	return tea.Tick(2*time.Second, func(time.Time) tea.Msg { return tickMsg{} })
 }
 
-// currentSession renvoie la session sélectionnée, ou false si aucune.
+// currentSession returns the selected session, or false if none.
 func (m Model) currentSession() (screen.Session, bool) {
 	if m.selSession < 0 || m.selSession >= len(m.sessions) {
 		return screen.Session{}, false
@@ -140,7 +140,7 @@ func (m Model) currentSession() (screen.Session, bool) {
 	return m.sessions[m.selSession], true
 }
 
-// selectedWin renvoie la fenêtre sélectionnée dans la liste UI, ou false.
+// selectedWin returns the window selected in the UI list, or false.
 func (m Model) selectedWin() (screen.Window, bool) {
 	if m.selWindow < 0 || m.selWindow >= len(m.windows) {
 		return screen.Window{}, false

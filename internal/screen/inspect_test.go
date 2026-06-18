@@ -2,7 +2,7 @@ package screen
 
 import "testing"
 
-// fakeFS simule /proc. Clés = chemins exacts.
+// fakeFS simulates /proc. Keys = exact paths.
 type fakeFS struct {
 	dirs  map[string][]string
 	files map[string][]byte
@@ -13,8 +13,8 @@ func (f fakeFS) ReadDir(n string) ([]string, error) { return f.dirs[n], nil }
 func (f fakeFS) ReadFile(n string) ([]byte, error)  { return f.files[n], nil }
 func (f fakeFS) Readlink(n string) (string, error)  { return f.links[n], nil }
 
-// stat: "pid (comm) state ppid ... " — on a besoin du champ 4 (ppid) et 22 (starttime).
-// On remplit jusqu'au champ 22 avec des zéros.
+// stat: "pid (comm) state ppid ... " — we need field 4 (ppid) and 22 (starttime).
+// We fill up to field 22 with zeros.
 func statLine(pid int, comm string, ppid, starttime int) string {
 	s := itoa(pid) + " (" + comm + ") S " + itoa(ppid)
 	for i := 5; i <= 21; i++ {
@@ -23,7 +23,7 @@ func statLine(pid int, comm string, ppid, starttime int) string {
 	s += " " + itoa(starttime)
 	return s
 }
-func itoa(i int) string { // évite d'importer strconv dans le test
+func itoa(i int) string { // avoids importing strconv in the test
 	if i == 0 {
 		return "0"
 	}
@@ -43,7 +43,7 @@ func itoa(i int) string { // évite d'importer strconv dans le test
 }
 
 func TestInspectAllReliable(t *testing.T) {
-	// démon PID 100, deux shells enfants: pid 200 (starttime 10), pid 300 (starttime 20).
+	// daemon PID 100, two child shells: pid 200 (starttime 10), pid 300 (starttime 20).
 	fs := fakeFS{
 		dirs: map[string][]string{"/proc": {"100", "200", "300"}},
 		files: map[string][]byte{
@@ -75,7 +75,7 @@ func TestInspectAllReliable(t *testing.T) {
 }
 
 func TestInspectAllUnreliable(t *testing.T) {
-	// 1 enfant mais 2 fenêtres → mapping non fiable → tout en "—".
+	// 1 child but 2 windows → unreliable mapping → everything stays "—".
 	fs := fakeFS{
 		dirs: map[string][]string{"/proc": {"100", "200"}},
 		files: map[string][]byte{

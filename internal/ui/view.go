@@ -16,7 +16,7 @@ var (
 
 func (m Model) View() string {
 	if len(m.sessions) == 0 {
-		return "\n  Aucune session — [n] pour en créer, [q] pour quitter\n"
+		return "\n  No sessions — [n] to create one, [q] to quit\n"
 	}
 
 	colW := m.width/2 - 4
@@ -36,14 +36,14 @@ func (m Model) View() string {
 		detailW = 1
 	}
 	detail := idleBorder.Width(detailW).Render(m.renderDetail())
-	help := helpStyle.Render(" [↑↓] nav  [tab] panneau  [↵] attach  [n]ew  [d]el  [r] refresh  [q]uit")
+	help := helpStyle.Render(" [↑↓] nav  [tab] panel  [↵] attach  [n]ew  [d]el  [r] refresh  [q]uit")
 
 	out := panels + "\n" + detail + "\n" + help
 	if m.mode == modeConfirmKill {
 		out += "\n" + m.renderConfirmKill()
 	}
 	if m.mode == modeNewSession {
-		out += "\n  Nouveau nom de session: " + m.input + "▌"
+		out += "\n  New session name: " + m.input + "▌"
 	}
 	if m.err != "" {
 		out += "\n  ⚠ " + m.err
@@ -74,7 +74,7 @@ func (m Model) renderSessions(w int) string {
 
 func (m Model) renderWindows(w int) string {
 	if len(m.windows) == 0 {
-		return "(aucune fenêtre)"
+		return "(no windows)"
 	}
 	var b strings.Builder
 	for i, win := range m.windows {
@@ -101,7 +101,7 @@ func (m Model) renderDetail() string {
 
 func (m Model) renderConfirmKill() string {
 	if s, ok := m.currentSession(); ok {
-		return fmt.Sprintf("  Tuer la session %q ? [y/N]", s.Name)
+		return fmt.Sprintf("  Kill session %q? [y/N]", s.Name)
 	}
 	return ""
 }

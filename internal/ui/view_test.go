@@ -18,7 +18,7 @@ func TestViewShowsSessionsAndWindows(t *testing.T) {
 	out := m.View()
 	for _, want := range []string{"work", "zsh", "/home/chuya"} {
 		if !strings.Contains(out, want) {
-			t.Errorf("View() ne contient pas %q", want)
+			t.Errorf("View() does not contain %q", want)
 		}
 	}
 }
@@ -26,8 +26,8 @@ func TestViewShowsSessionsAndWindows(t *testing.T) {
 func TestViewEmptyState(t *testing.T) {
 	m := New(&fakeAPI{})
 	m.width, m.height = 80, 24
-	if !strings.Contains(m.View(), "Aucune session") {
-		t.Error("View() doit afficher l'état vide")
+	if !strings.Contains(m.View(), "No sessions") {
+		t.Error("View() must show the empty state")
 	}
 }
 
@@ -36,8 +36,8 @@ func TestViewConfirmKillPrompt(t *testing.T) {
 	m.width, m.height = 80, 24
 	m.sessions = []screen.Session{{ID: "1.work", Name: "work"}}
 	m.mode = modeConfirmKill
-	if !strings.Contains(m.View(), "work") || !strings.Contains(strings.ToLower(m.View()), "tuer") {
-		t.Error("View() doit afficher la confirmation de suppression")
+	if !strings.Contains(m.View(), "work") || !strings.Contains(strings.ToLower(m.View()), "kill") {
+		t.Error("View() must show the kill confirmation")
 	}
 }
 
@@ -48,8 +48,8 @@ func TestViewNewSessionPrompt(t *testing.T) {
 	m.mode = modeNewSession
 	m.input = "demo"
 	out := m.View()
-	if !strings.Contains(out, "Nouveau nom de session") || !strings.Contains(out, "demo") {
-		t.Error("View() doit afficher le prompt de nouvelle session avec la saisie")
+	if !strings.Contains(out, "New session name") || !strings.Contains(out, "demo") {
+		t.Error("View() must show the new-session prompt with the input")
 	}
 }
 
@@ -61,6 +61,6 @@ func TestViewMarksCurrentSession(t *testing.T) {
 		{ID: "2.x", Name: "x", State: screen.StateDetached},
 	}
 	if !strings.Contains(m.View(), "●") {
-		t.Error("attendait le marqueur ● sur la session courante")
+		t.Error("expected the ● marker on the current session")
 	}
 }

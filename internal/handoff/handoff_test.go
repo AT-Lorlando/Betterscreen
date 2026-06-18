@@ -29,21 +29,21 @@ func TestReadAndClearRemovesFile(t *testing.T) {
 	s := newStore(path, fixedClock(now), 10*time.Second)
 	_ = s.Write("A", -1)
 	if _, _, ok := s.ReadAndClear(); !ok {
-		t.Fatal("première lecture doit réussir")
+		t.Fatal("first read must succeed")
 	}
 	if _, _, ok := s.ReadAndClear(); ok {
-		t.Error("seconde lecture doit échouer (fichier supprimé)")
+		t.Error("second read must fail (file removed)")
 	}
 }
 
 func TestStaleHandoffIgnored(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "handoff")
-	// écrit à t=1000, lu à t=1011 (>10s de TTL)
+	// written at t=1000, read at t=1011 (>10s TTL)
 	w := newStore(path, fixedClock(time.Unix(1000, 0)), 10*time.Second)
 	_ = w.Write("A", 0)
 	r := newStore(path, fixedClock(time.Unix(1011, 0)), 10*time.Second)
 	if _, _, ok := r.ReadAndClear(); ok {
-		t.Error("handoff périmé doit être ignoré")
+		t.Error("stale handoff must be ignored")
 	}
 }
 
@@ -51,7 +51,7 @@ func TestReadMissingFile(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "nope")
 	s := newStore(path, fixedClock(time.Unix(1000, 0)), 10*time.Second)
 	if _, _, ok := s.ReadAndClear(); ok {
-		t.Error("fichier absent doit donner ok=false")
+		t.Error("missing file must give ok=false")
 	}
 }
 
@@ -63,7 +63,7 @@ func TestReadBadWindowField(t *testing.T) {
 	}
 	s := newStore(path, fixedClock(time.Unix(1000, 0)), 10*time.Second)
 	if _, _, ok := s.ReadAndClear(); ok {
-		t.Error("champ window illisible doit donner ok=false")
+		t.Error("unreadable window field must give ok=false")
 	}
 }
 
@@ -74,6 +74,6 @@ func TestReadEmptySessionID(t *testing.T) {
 	}
 	s := newStore(path, fixedClock(time.Unix(1000, 0)), 10*time.Second)
 	if _, _, ok := s.ReadAndClear(); ok {
-		t.Error("sessionID vide doit donner ok=false")
+		t.Error("empty sessionID must give ok=false")
 	}
 }

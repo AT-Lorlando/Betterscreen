@@ -9,14 +9,14 @@ import (
 	"time"
 )
 
-// Store persiste une cible de saut entre le mode in-session et le lanceur.
+// Store persists a jump target between in-session mode and the launcher.
 type Store struct {
 	path string
 	now  func() time.Time
 	ttl  time.Duration
 }
 
-// New construit le Store réel (chemin XDG, horloge système, TTL 10 s).
+// New builds the real Store (XDG path, system clock, 10s TTL).
 func New() *Store {
 	return newStore(defaultPath(), time.Now, 10*time.Second)
 }
@@ -34,7 +34,7 @@ func defaultPath() string {
 	return filepath.Join(dir, "betterscreen", "handoff")
 }
 
-// Write enregistre la cible (sessionID, window) horodatée.
+// Write records the (sessionID, window) target with a timestamp.
 func (s *Store) Write(sessionID string, window int) error {
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return err
@@ -43,8 +43,8 @@ func (s *Store) Write(sessionID string, window int) error {
 	return os.WriteFile(s.path, []byte(line), 0o644)
 }
 
-// ReadAndClear lit la cible, supprime le fichier, et renvoie ok=false si absent,
-// illisible, ou périmé (> TTL).
+// ReadAndClear reads the target, removes the file, and returns ok=false if it is
+// missing, unreadable, or stale (> TTL).
 func (s *Store) ReadAndClear() (string, int, bool) {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
@@ -69,5 +69,5 @@ func (s *Store) ReadAndClear() (string, int, bool) {
 	return fields[0], win, true
 }
 
-// Clear supprime tout handoff existant (purge au démarrage du lanceur).
+// Clear removes any existing handoff (purge at launcher startup).
 func (s *Store) Clear() { _ = os.Remove(s.path) }

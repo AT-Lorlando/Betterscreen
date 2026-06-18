@@ -1,6 +1,6 @@
 package screen
 
-// SessionState représente l'état d'attachement d'une session screen.
+// SessionState represents the attachment state of a screen session.
 type SessionState int
 
 const (
@@ -20,21 +20,21 @@ func (s SessionState) String() string {
 	}
 }
 
-// Session est une session screen telle que listée par `screen -ls`.
+// Session is a screen session as listed by `screen -ls`.
 type Session struct {
 	PID   int
 	Name  string
-	ID    string // "<pid>.<nom>", identifiant passé à `screen -S`
+	ID    string // "<pid>.<name>", identifier passed to `screen -S`
 	State SessionState
 }
 
-// Window est une fenêtre dans une session screen.
+// Window is a window inside a screen session.
 type Window struct {
 	Num   int
 	Title string
 }
 
-// Detail est l'info best-effort sur une fenêtre (pwd + process avant-plan).
+// Detail is best-effort info about a window (pwd + foreground process).
 type Detail struct {
 	Pwd  string
 	Proc string

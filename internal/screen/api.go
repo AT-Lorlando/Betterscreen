@@ -4,14 +4,14 @@ import (
 	"os/exec"
 )
 
-// Client exécute réellement les commandes screen.
+// Client actually runs the screen commands.
 type Client struct{}
 
 func NewClient() Client { return Client{} }
 
 func (Client) ListSessions() ([]Session, error) {
-	// `screen -ls` renvoie un code de sortie non-nul quand il y a des sessions ;
-	// on ignore l'erreur de code et on parse toujours la sortie.
+	// `screen -ls` returns a non-zero exit code when there are sessions;
+	// we ignore the exit-code error and always parse the output.
 	out, _ := exec.Command("screen", "-ls").CombinedOutput()
 	return ParseSessions(string(out)), nil
 }
