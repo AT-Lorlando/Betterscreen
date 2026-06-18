@@ -26,8 +26,19 @@ func TestViewShowsSessionsAndWindows(t *testing.T) {
 func TestViewEmptyState(t *testing.T) {
 	m := New(&fakeAPI{})
 	m.width, m.height = 80, 24
-	if !strings.Contains(m.View(), "No sessions") {
+	if !strings.Contains(m.View(), "no sessions") {
 		t.Error("View() must show the empty state")
+	}
+}
+
+func TestViewNewSessionPromptWhenEmpty(t *testing.T) {
+	m := New(&fakeAPI{})
+	m.width, m.height = 80, 24
+	m.mode = modeNewSession
+	m.input = "demo"
+	out := m.View()
+	if !strings.Contains(out, "New session name") || !strings.Contains(out, "demo") {
+		t.Error("View() must show the new-session prompt even with no sessions")
 	}
 }
 

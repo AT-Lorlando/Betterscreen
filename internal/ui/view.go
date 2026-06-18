@@ -15,10 +15,6 @@ var (
 )
 
 func (m Model) View() string {
-	if len(m.sessions) == 0 {
-		return "\n  No sessions — [n] to create one, [q] to quit\n"
-	}
-
 	colW := m.width/2 - 4
 	if colW < 10 {
 		colW = 10
@@ -60,6 +56,9 @@ func boxFor(active bool, title, body string, w int) string {
 }
 
 func (m Model) renderSessions(w int) string {
+	if len(m.sessions) == 0 {
+		return "(no sessions)"
+	}
 	var b strings.Builder
 	for i, s := range m.sessions {
 		marker := ""
