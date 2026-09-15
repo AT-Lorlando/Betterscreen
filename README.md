@@ -6,7 +6,9 @@ jump between them — including from inside a running session.
 
 ## Features
 
-- List all sessions (attached / detached / dead) and attach to one.
+- List all sessions (attached / detached / dead) and attach to one — a session
+  still attached elsewhere is detached from that terminal and reattached here.
+- Detach a session from its terminal without killing it.
 - Create and kill sessions from the interface.
 - Browse the windows of a session and attach directly to a chosen window.
 - Show each window's working directory and foreground process (best effort).
@@ -67,6 +69,7 @@ Inside the in-session menu:
 | `↑` `↓` / `j` `k` | Move selection |
 | `Tab` | Switch panel |
 | `Enter` | Attach (launcher) / switch or jump (in-session) |
+| `x` | Detach session (attached sessions only) |
 | `n` | New session |
 | `d` | Kill session (with confirmation) |
 | `r` | Refresh |

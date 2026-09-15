@@ -8,7 +8,7 @@ import (
 func TestAttachCommand(t *testing.T) {
 	s := Session{ID: "3378954.Astronix"}
 	cmd := AttachCommand(s, Window{Num: 2})
-	want := []string{"screen", "-r", "3378954.Astronix", "-p", "2"}
+	want := []string{"screen", "-d", "-r", "3378954.Astronix", "-p", "2"}
 	if !reflect.DeepEqual(cmd.Args, want) {
 		t.Errorf("args = %v, want %v", cmd.Args, want)
 	}

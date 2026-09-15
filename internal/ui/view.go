@@ -32,7 +32,7 @@ func (m Model) View() string {
 		detailW = 1
 	}
 	detail := idleBorder.Width(detailW).Render(m.renderDetail())
-	help := helpStyle.Render(" [↑↓] nav  [tab] panel  [↵] attach  [n]ew  [d]el  [r] refresh  [q]uit")
+	help := helpStyle.Render(" [↑↓] nav  [tab] panel  [↵] attach  [x] detach  [n]ew  [d]el  [r] refresh  [q]uit")
 
 	out := panels + "\n" + detail + "\n" + help
 	if m.mode == modeConfirmKill {

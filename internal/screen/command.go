@@ -6,9 +6,12 @@ import (
 )
 
 // AttachCommand builds the attach command (terminal handoff).
-// `-p <num>` positions on the desired window upon attach.
+// `-d -r` detaches the session from any other terminal first, so a session
+// still attached elsewhere can be taken over instead of failing with
+// "There is a screen on ... (Attached)". `-p <num>` positions on the desired
+// window upon attach.
 func AttachCommand(s Session, w Window) *exec.Cmd {
-	return exec.Command("screen", "-r", s.ID, "-p", strconv.Itoa(w.Num))
+	return exec.Command("screen", "-d", "-r", s.ID, "-p", strconv.Itoa(w.Num))
 }
 
 // killArgs: cleanly kills a session (`-X quit` terminates the daemon).

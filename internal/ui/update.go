@@ -116,10 +116,25 @@ func (m Model) onNormalKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.mode = modeConfirmKill
 		}
 		return m, nil
+	case "x":
+		return m.onDetach()
 	case "enter":
 		return m.onEnter()
 	}
 	return m, nil
+}
+
+// onDetach detaches the selected session from its terminal (attached only).
+func (m Model) onDetach() (tea.Model, tea.Cmd) {
+	s, ok := m.currentSession()
+	if !ok || s.State != screen.StateAttached {
+		return m, nil
+	}
+	if err := m.api.Detach(s.ID); err != nil {
+		m.err = "detach: " + err.Error()
+		return m, nil
+	}
+	return m, m.loadSessions()
 }
 
 func (m Model) moveSelection(delta int) Model {

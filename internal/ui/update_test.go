@@ -265,3 +265,39 @@ func TestEnterInSessionNilHandoffDoesNotDetach(t *testing.T) {
 		t.Error("expected an error message when the handoff is unavailable")
 	}
 }
+
+func TestXDetachesAttachedSession(t *testing.T) {
+	api := &fakeAPI{sessions: []screen.Session{{ID: "1.a", State: screen.StateAttached}}}
+	m := modelWith(api)
+	next, cmd := m.Update(key('x'))
+	if api.detachedID != "1.a" {
+		t.Errorf("expected Detach(1.a), got %q", api.detachedID)
+	}
+	if cmd == nil {
+		t.Error("expected a reload command after detach")
+	}
+	if next.(Model).mode != modeNormal {
+		t.Errorf("mode = %v, want modeNormal", next.(Model).mode)
+	}
+}
+
+func TestXIgnoresDetachedSession(t *testing.T) {
+	api := &fakeAPI{sessions: []screen.Session{{ID: "1.a", State: screen.StateDetached}}}
+	m := modelWith(api)
+	_, cmd := m.Update(key('x'))
+	if api.detachedID != "" {
+		t.Errorf("must not detach a detached session, got Detach(%q)", api.detachedID)
+	}
+	if cmd != nil {
+		t.Error("expected no command when nothing to detach")
+	}
+}
+
+func TestXIgnoresDeadSession(t *testing.T) {
+	api := &fakeAPI{sessions: []screen.Session{{ID: "1.a", State: screen.StateDead}}}
+	m := modelWith(api)
+	m.Update(key('x'))
+	if api.detachedID != "" {
+		t.Errorf("must not detach a dead session, got Detach(%q)", api.detachedID)
+	}
+}
