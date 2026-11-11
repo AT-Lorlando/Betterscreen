@@ -41,9 +41,11 @@ type Options struct {
 }
 
 type server struct {
-	screen  Screen
-	origins map[string]bool
-	log     *log.Logger
+	screen    Screen
+	origins   map[string]bool
+	log       *log.Logger
+	hub       *hub
+	keepAlive time.Duration
 }
 
 // New builds the service handler: logging → CORS → auth → routes.
@@ -51,6 +53,15 @@ func New(opts Options) http.Handler {
 	s := &server{screen: opts.Screen, origins: map[string]bool{}, log: opts.Logger}
 	if s.log == nil {
 		s.log = log.New(io.Discard, "", 0)
+	}
+	poll := opts.PollInterval
+	if poll == 0 {
+		poll = 2 * time.Second
+	}
+	s.hub = newHub(opts.Screen.ListSessions, poll)
+	s.keepAlive = opts.KeepAlive
+	if s.keepAlive == 0 {
+		s.keepAlive = 30 * time.Second
 	}
 	for _, o := range opts.AllowedOrigins {
 		s.origins[o] = true
@@ -63,6 +74,7 @@ func New(opts Options) http.Handler {
 	mux.HandleFunc("GET /api/sessions/{id}/windows", s.listWindows)
 	mux.HandleFunc("POST /api/sessions/{id}/detach", s.detach)
 	mux.HandleFunc("POST /api/sessions/{id}/select", s.selectWindow)
+	mux.HandleFunc("GET /api/events", s.events)
 
 	return s.logging(s.cors(auth.Middleware(opts.Token, mux)))
 }
