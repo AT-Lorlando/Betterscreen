@@ -1,12 +1,16 @@
 package serve
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -140,5 +144,62 @@ func TestRunServes(t *testing.T) {
 	}
 	if err := stop(); err != nil {
 		t.Fatalf("second Run: %v", err)
+	}
+}
+
+// An open SSE stream must not stall shutdown or make it fail.
+func TestRunStopsWithOpenStream(t *testing.T) {
+	dir := t.TempDir()
+	port := freePort(t)
+	_, stop := runUntilListening(t, dir, port)
+	token, err := os.ReadFile(filepath.Join(dir, "token"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
+	req, _ := http.NewRequest("GET", fmt.Sprintf("https://127.0.0.1:%d/api/events", port), nil)
+	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(string(token)))
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	start := time.Now()
+	if err := stop(); err != nil {
+		t.Errorf("Run returned %v with a stream open, want nil", err)
+	}
+	if d := time.Since(start); d > 2*time.Second {
+		t.Errorf("shutdown took %v with a stream open, want < 2s", d)
+	}
+}
+
+// Idle keep-alive connections are closed, so clients without the token
+// cannot pile up connections.
+func TestRunClosesIdleConnections(t *testing.T) {
+	old := idleTimeout
+	idleTimeout = 200 * time.Millisecond
+	defer func() { idleTimeout = old }()
+	port := freePort(t)
+	_, stop := runUntilListening(t, t.TempDir(), port)
+	defer stop()
+
+	conn, err := tls.Dial("tcp", fmt.Sprintf("127.0.0.1:%d", port), &tls.Config{InsecureSkipVerify: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	fmt.Fprintf(conn, "GET /api/sessions HTTP/1.1\r\nHost: x\r\n\r\n")
+	br := bufio.NewReader(conn)
+	resp, err := http.ReadResponse(br, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	io.Copy(io.Discard, resp.Body)
+	resp.Body.Close()
+
+	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
+	if _, err := br.ReadByte(); err != io.EOF {
+		t.Errorf("idle connection not closed by the server: read returned %v, want EOF", err)
 	}
 }

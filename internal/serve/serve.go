@@ -23,6 +23,10 @@ import (
 	"betterscreen/internal/tlscert"
 )
 
+// idleTimeout closes keep-alive connections left idle, so clients without the
+// token cannot pile them up. A variable so tests can shorten it.
+var idleTimeout = 60 * time.Second
+
 type config struct {
 	Addr           string
 	ConfigDir      string
@@ -97,6 +101,10 @@ func Run(ctx context.Context, args []string, stdout io.Writer) error {
 		}),
 		TLSConfig:         &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12},
 		ReadHeaderTimeout: 10 * time.Second,
+		IdleTimeout:       idleTimeout,
+		// Requests inherit ctx: on shutdown, SSE streams and terminal bridges
+		// see it cancelled and unwind instead of holding Shutdown open.
+		BaseContext: func(net.Listener) context.Context { return ctx },
 	}
 	fmt.Fprintf(stdout, "listening on https://%s\n", ln.Addr())
 
