@@ -1,0 +1,10 @@
+[Unit]
+Description=BetterScreen API service
+After=network-online.target
+
+[Service]
+ExecStart=%h/.local/bin/betterscreen serve
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
