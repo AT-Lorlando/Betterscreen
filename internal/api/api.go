@@ -9,6 +9,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os/exec"
 	"time"
 
@@ -46,6 +47,8 @@ type server struct {
 	log       *log.Logger
 	hub       *hub
 	keepAlive time.Duration
+	// originHosts feeds the WebSocket origin check, which matches hosts.
+	originHosts []string
 }
 
 // New builds the service handler: logging → CORS → auth → routes.
@@ -65,6 +68,9 @@ func New(opts Options) http.Handler {
 	}
 	for _, o := range opts.AllowedOrigins {
 		s.origins[o] = true
+		if u, err := url.Parse(o); err == nil && u.Host != "" {
+			s.originHosts = append(s.originHosts, u.Host)
+		}
 	}
 
 	mux := http.NewServeMux()
@@ -75,6 +81,7 @@ func New(opts Options) http.Handler {
 	mux.HandleFunc("POST /api/sessions/{id}/detach", s.detach)
 	mux.HandleFunc("POST /api/sessions/{id}/select", s.selectWindow)
 	mux.HandleFunc("GET /api/events", s.events)
+	mux.HandleFunc("GET /ws/sessions/{id}", s.terminal)
 
 	return s.logging(s.cors(auth.Middleware(opts.Token, mux)))
 }
