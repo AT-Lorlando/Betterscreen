@@ -14,6 +14,12 @@ func AttachCommand(s Session, w Window) *exec.Cmd {
 	return exec.Command("screen", "-d", "-r", s.ID, "-p", strconv.Itoa(w.Num))
 }
 
+// ShareCommand builds a multi-display attach (`screen -x`): the session is
+// joined without detaching its other displays. `-p <num>` selects the window.
+func ShareCommand(s Session, window int) *exec.Cmd {
+	return exec.Command("screen", "-x", s.ID, "-p", strconv.Itoa(window))
+}
+
 // killArgs: cleanly kills a session (`-X quit` terminates the daemon).
 func killArgs(s Session) []string {
 	return []string{"-S", s.ID, "-X", "quit"}

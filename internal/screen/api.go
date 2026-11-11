@@ -40,6 +40,10 @@ func (Client) AttachCommand(s Session, w Window) *exec.Cmd {
 	return AttachCommand(s, w)
 }
 
+func (Client) ShareCommand(s Session, window int) *exec.Cmd {
+	return ShareCommand(s, window)
+}
+
 func (Client) SelectWindow(id string, n int) error {
 	return exec.Command("screen", selectArgs(id, n)...).Run()
 }

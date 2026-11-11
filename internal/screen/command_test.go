@@ -45,3 +45,11 @@ func TestDetachArgs(t *testing.T) {
 		t.Errorf("got %v, want %v", got, want)
 	}
 }
+
+func TestShareCommand(t *testing.T) {
+	cmd := ShareCommand(Session{ID: "3378954.Astronix"}, 2)
+	want := []string{"screen", "-x", "3378954.Astronix", "-p", "2"}
+	if !reflect.DeepEqual(cmd.Args, want) {
+		t.Errorf("args = %v, want %v", cmd.Args, want)
+	}
+}
