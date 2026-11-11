@@ -68,8 +68,8 @@ func TestTerminalShareDefault(t *testing.T) {
 	echoes(t, c, "ping")
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.shareSession != "1.a" || f.shareWindow != 0 {
-		t.Errorf("share %q/%d, want 1.a/0", f.shareSession, f.shareWindow)
+	if f.shareSession != "1.a" || f.shareWindow != -1 {
+		t.Errorf("share %q/%d, want 1.a/-1", f.shareSession, f.shareWindow)
 	}
 }
 
@@ -147,5 +147,27 @@ func TestTerminalForeignOrigin(t *testing.T) {
 	h := New(Options{Screen: f, Token: testToken, AllowedOrigins: []string{"https://evil.lan"}})
 	if _, _, err := dial(t, h, "/ws/sessions/1.a", opts()); err != nil {
 		t.Errorf("allowed origin rejected: %v", err)
+	}
+}
+
+// Without a window parameter the client lands on the session's current
+// window: no window is forced.
+func TestTerminalNoWindowKeepsCurrent(t *testing.T) {
+	for _, mode := range []string{"", "?mode=take"} {
+		f := &fakeScreen{sessions: attachedA(), shareWindow: 99, attachWindow: 99}
+		c, _, err := dial(t, newTestHandler(f), "/ws/sessions/1.a"+mode, &websocket.DialOptions{Subprotocols: tokenProtocols()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		echoes(t, c, "ping")
+		f.mu.Lock()
+		got := f.shareWindow
+		if mode != "" {
+			got = f.attachWindow
+		}
+		f.mu.Unlock()
+		if got != -1 {
+			t.Errorf("mode %q: window = %d, want -1 (no window forced)", mode, got)
+		}
 	}
 }

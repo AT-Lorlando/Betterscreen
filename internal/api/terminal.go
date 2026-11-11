@@ -26,7 +26,7 @@ func (s *server) terminal(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "mode must be share or take")
 		return
 	}
-	window := 0
+	window := -1 // absent: keep the session's current window
 	if v := q.Get("window"); v != "" {
 		n, err := strconv.Atoi(v)
 		if err != nil || n < 0 || n > maxWindow {

@@ -114,7 +114,8 @@ A session is `{"id": "3378954.work", "pid": 3378954, "name": "work", "state": "a
 The WebSocket carries raw terminal bytes in binary frames both ways; the client
 sends `{"type": "resize", "cols": 120, "rows": 40}` as a text frame on resize.
 `share` (default) joins the session next to its other displays; `take`
-detaches them first, so the window follows the client's size. When the screen
+detaches them first, so the window follows the client's size. Without
+`window`, the client lands on the session's current window. When the screen
 client exits the socket closes with code `4000`.
 
 Browsers cannot set headers on a WebSocket: offer the subprotocols

@@ -9,15 +9,24 @@ import (
 // `-d -r` detaches the session from any other terminal first, so a session
 // still attached elsewhere can be taken over instead of failing with
 // "There is a screen on ... (Attached)". `-p <num>` positions on the desired
-// window upon attach.
+// window upon attach; a negative Num keeps the session's current window.
 func AttachCommand(s Session, w Window) *exec.Cmd {
-	return exec.Command("screen", "-d", "-r", s.ID, "-p", strconv.Itoa(w.Num))
+	return exec.Command("screen", withWindow([]string{"-d", "-r", s.ID}, w.Num)...)
 }
 
 // ShareCommand builds a multi-display attach (`screen -x`): the session is
-// joined without detaching its other displays. `-p <num>` selects the window.
+// joined without detaching its other displays. `-p <num>` selects the window;
+// a negative window keeps the session's current one.
 func ShareCommand(s Session, window int) *exec.Cmd {
-	return exec.Command("screen", "-x", s.ID, "-p", strconv.Itoa(window))
+	return exec.Command("screen", withWindow([]string{"-x", s.ID}, window)...)
+}
+
+// withWindow appends `-p <window>` unless window is negative.
+func withWindow(args []string, window int) []string {
+	if window < 0 {
+		return args
+	}
+	return append(args, "-p", strconv.Itoa(window))
 }
 
 // killArgs: cleanly kills a session (`-X quit` terminates the daemon).

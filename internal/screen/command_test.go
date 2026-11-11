@@ -53,3 +53,19 @@ func TestShareCommand(t *testing.T) {
 		t.Errorf("args = %v, want %v", cmd.Args, want)
 	}
 }
+
+func TestShareCommandNoWindow(t *testing.T) {
+	cmd := ShareCommand(Session{ID: "1.a"}, -1)
+	want := []string{"screen", "-x", "1.a"}
+	if !reflect.DeepEqual(cmd.Args, want) {
+		t.Errorf("args = %v, want %v", cmd.Args, want)
+	}
+}
+
+func TestAttachCommandNoWindow(t *testing.T) {
+	cmd := AttachCommand(Session{ID: "1.a"}, Window{Num: -1})
+	want := []string{"screen", "-d", "-r", "1.a"}
+	if !reflect.DeepEqual(cmd.Args, want) {
+		t.Errorf("args = %v, want %v", cmd.Args, want)
+	}
+}
