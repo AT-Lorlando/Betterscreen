@@ -5,6 +5,7 @@ After=network-online.target
 [Service]
 ExecStart=%h/.local/bin/betterscreen serve
 Restart=on-failure
+KillMode=process
 
 [Install]
 WantedBy=default.target

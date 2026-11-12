@@ -51,6 +51,11 @@ systemctl --user enable --now betterscreen
 loginctl enable-linger      # optional: run without an open login session
 ```
 
+The unit sets `KillMode=process`: sessions created through the API live in the
+service's cgroup, and the default `control-group` mode would kill them on every
+stop or restart. Keep that line if you write your own unit; edit `ExecStart` to
+pass flags (for example `--addr 127.0.0.1:8443`).
+
 ## Configuration
 
 Everything lives in the config directory (`~/.betterscreen` by default):
