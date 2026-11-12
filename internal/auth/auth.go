@@ -5,12 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/subtle"
 	"encoding/base64"
-	"errors"
-	"fmt"
-	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
@@ -21,36 +16,16 @@ const Subprotocol = "betterscreen"
 // browsers cannot set an Authorization header on a WebSocket.
 const tokenPrefix = "token."
 
-const minTokenLen = 32
+// MinTokenLen is the shortest token the service accepts.
+const MinTokenLen = 32
 
-// LoadOrCreate returns the token stored in <dir>/token, generating it (32
-// random bytes, base64url) on first use. created reports a fresh token.
-func LoadOrCreate(dir string) (token string, created bool, err error) {
-	path := filepath.Join(dir, "token")
-	data, err := os.ReadFile(path)
-	switch {
-	case err == nil:
-		token = strings.TrimSpace(string(data))
-		if len(token) < minTokenLen {
-			return "", false, fmt.Errorf("token in %s is shorter than %d characters", path, minTokenLen)
-		}
-		return token, false, nil
-	case !errors.Is(err, fs.ErrNotExist):
-		return "", false, err
-	}
-
+// NewToken returns 32 random bytes encoded as base64url (43 characters).
+func NewToken() (string, error) {
 	buf := make([]byte, 32)
 	if _, err := rand.Read(buf); err != nil {
-		return "", false, err
+		return "", err
 	}
-	token = base64.RawURLEncoding.EncodeToString(buf)
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return "", false, err
-	}
-	if err := os.WriteFile(path, []byte(token+"\n"), 0o600); err != nil {
-		return "", false, err
-	}
-	return token, true, nil
+	return base64.RawURLEncoding.EncodeToString(buf), nil
 }
 
 // Check reports whether r carries token, either as `Authorization: Bearer`

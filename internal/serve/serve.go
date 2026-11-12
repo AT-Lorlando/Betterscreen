@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"betterscreen/internal/api"
-	"betterscreen/internal/auth"
 	"betterscreen/internal/screen"
 	"betterscreen/internal/tlscert"
 )
@@ -40,25 +39,30 @@ type originList []string
 func (o *originList) String() string { return strings.Join(*o, ",") }
 
 func (o *originList) Set(v string) error {
-	u, err := url.Parse(v)
-	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
-		u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
-		return fmt.Errorf("origin %q must look like https://host[:port]", v)
+	if err := checkOrigin(v); err != nil {
+		return err
 	}
 	*o = append(*o, v)
 	return nil
 }
 
-func parseFlags(args []string, getenv func(string) string, home string) (config, error) {
-	dir := filepath.Join(home, ".config", "betterscreen")
-	if x := getenv("XDG_CONFIG_HOME"); x != "" {
-		dir = filepath.Join(x, "betterscreen")
+func checkOrigin(v string) error {
+	u, err := url.Parse(v)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" ||
+		u.Path != "" || u.RawQuery != "" || u.Fragment != "" || u.User != nil {
+		return fmt.Errorf("origin %q must look like https://host[:port]", v)
 	}
+	return nil
+}
+
+// parseFlags reads the command line. An empty Addr means "not given": merge
+// then takes it from config.json, else the default.
+func parseFlags(args []string, home string) (config, error) {
 	cfg := config{}
 	var origins originList
 	fs := flag.NewFlagSet("serve", flag.ContinueOnError)
-	fs.StringVar(&cfg.Addr, "addr", ":8443", "listen address")
-	fs.StringVar(&cfg.ConfigDir, "config-dir", dir, "directory holding the token and TLS material")
+	fs.StringVar(&cfg.Addr, "addr", "", "listen address (default from config.json, else "+defaultAddr+")")
+	fs.StringVar(&cfg.ConfigDir, "config-dir", filepath.Join(home, ".betterscreen"), "directory holding config.json and the TLS material")
 	fs.Var(&origins, "allow-origin", "extra origin allowed by CORS and WebSocket (repeatable)")
 	if err := fs.Parse(args); err != nil {
 		return config{}, err
@@ -67,20 +71,20 @@ func parseFlags(args []string, getenv func(string) string, home string) (config,
 	return cfg, nil
 }
 
-// Run serves the API until ctx is cancelled, then shuts down gracefully.
 func Run(ctx context.Context, args []string, stdout io.Writer) error {
 	home, _ := os.UserHomeDir()
-	cfg, err := parseFlags(args, os.Getenv, home)
+	flags, err := parseFlags(args, home)
 	if err != nil {
 		return err
 	}
-	token, created, err := auth.LoadOrCreate(cfg.ConfigDir)
+	fc, created, err := loadConfig(flags.ConfigDir)
 	if err != nil {
 		return err
 	}
 	if created {
-		fmt.Fprintf(stdout, "token: %s (saved to %s)\n", token, filepath.Join(cfg.ConfigDir, "token"))
+		fmt.Fprintf(stdout, "token: %s (saved to %s)\n", fc.Token, filepath.Join(flags.ConfigDir, configFile))
 	}
+	cfg := merge(flags, fc)
 	hosts, ips := tlscert.LocalSANs()
 	cert, fingerprint, err := tlscert.LoadOrCreate(cfg.ConfigDir, hosts, ips)
 	if err != nil {
@@ -95,7 +99,7 @@ func Run(ctx context.Context, args []string, stdout io.Writer) error {
 	srv := &http.Server{
 		Handler: api.New(api.Options{
 			Screen:         screen.NewClient(),
-			Token:          token,
+			Token:          fc.Token,
 			AllowedOrigins: cfg.AllowedOrigins,
 			Logger:         log.New(stdout, "", log.LstdFlags),
 		}),

@@ -3,58 +3,27 @@ package auth
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestLoadOrCreateGenerates(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "cfg")
-	token, created, err := LoadOrCreate(dir)
+func TestNewToken(t *testing.T) {
+	a, err := NewToken()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !created {
-		t.Error("created = false, want true")
-	}
-	if len(token) != 43 {
-		t.Errorf("len(token) = %d, want 43", len(token))
-	}
-	fi, err := os.Stat(filepath.Join(dir, "token"))
+	b, err := NewToken()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if fi.Mode().Perm() != 0o600 {
-		t.Errorf("mode = %v, want 0600", fi.Mode().Perm())
+	if len(a) != 43 {
+		t.Errorf("len(token) = %d, want 43", len(a))
 	}
-}
-
-func TestLoadOrCreateReuses(t *testing.T) {
-	dir := t.TempDir()
-	first, _, err := LoadOrCreate(dir)
-	if err != nil {
-		t.Fatal(err)
+	if len(a) < MinTokenLen {
+		t.Errorf("len(token) = %d, below MinTokenLen %d", len(a), MinTokenLen)
 	}
-	second, created, err := LoadOrCreate(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if created {
-		t.Error("created = true on second call")
-	}
-	if first != second {
-		t.Errorf("token changed: %q then %q", first, second)
-	}
-}
-
-func TestLoadOrCreateRejectsShortToken(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "token"), []byte("abc\n"), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if _, _, err := LoadOrCreate(dir); err == nil {
-		t.Error("expected an error for a short token")
+	if a == b {
+		t.Error("two tokens are equal")
 	}
 }
 

@@ -18,35 +18,21 @@ import (
 	"time"
 )
 
-func env(vars map[string]string) func(string) string {
-	return func(k string) string { return vars[k] }
-}
-
 func TestParseFlagsDefaults(t *testing.T) {
-	cfg, err := parseFlags(nil, env(map[string]string{"XDG_CONFIG_HOME": ""}), "/h")
+	cfg, err := parseFlags(nil, "/h")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Addr != ":8443" {
-		t.Errorf("Addr = %q, want :8443", cfg.Addr)
+	if cfg.Addr != "" {
+		t.Errorf("Addr = %q, want empty (resolved later from config.json)", cfg.Addr)
 	}
-	if cfg.ConfigDir != "/h/.config/betterscreen" {
-		t.Errorf("ConfigDir = %q", cfg.ConfigDir)
-	}
-}
-
-func TestParseFlagsXDG(t *testing.T) {
-	cfg, err := parseFlags(nil, env(map[string]string{"XDG_CONFIG_HOME": "/x"}), "/h")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if cfg.ConfigDir != "/x/betterscreen" {
-		t.Errorf("ConfigDir = %q, want /x/betterscreen", cfg.ConfigDir)
+	if cfg.ConfigDir != "/h/.betterscreen" {
+		t.Errorf("ConfigDir = %q, want /h/.betterscreen", cfg.ConfigDir)
 	}
 }
 
 func TestParseFlagsOrigins(t *testing.T) {
-	cfg, err := parseFlags([]string{"--allow-origin", "https://a.lan", "--allow-origin", "http://b.lan:3000"}, env(nil), "/h")
+	cfg, err := parseFlags([]string{"--allow-origin", "https://a.lan", "--allow-origin", "http://b.lan:3000"}, "/h")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +40,7 @@ func TestParseFlagsOrigins(t *testing.T) {
 		t.Errorf("AllowedOrigins = %v, want %v", cfg.AllowedOrigins, want)
 	}
 	for _, bad := range []string{"front.lan", "https://front.lan/app", "ftp://front.lan"} {
-		if _, err := parseFlags([]string{"--allow-origin", bad}, env(nil), "/h"); err == nil {
+		if _, err := parseFlags([]string{"--allow-origin", bad}, "/h"); err == nil {
 			t.Errorf("origin %q accepted", bad)
 		}
 	}
@@ -120,6 +106,9 @@ func TestRunServes(t *testing.T) {
 	dir := t.TempDir()
 	port := freePort(t)
 	out, stop := runUntilListening(t, dir, port)
+	if _, err := os.Stat(filepath.Join(dir, "config.json")); err != nil {
+		t.Errorf("config.json not created: %v", err)
+	}
 	for _, want := range []string{"token:", "TLS certificate SHA-256:"} {
 		if !strings.Contains(out.String(), want) {
 			t.Errorf("output lacks %q:\n%s", want, out.String())
@@ -152,13 +141,13 @@ func TestRunStopsWithOpenStream(t *testing.T) {
 	dir := t.TempDir()
 	port := freePort(t)
 	_, stop := runUntilListening(t, dir, port)
-	token, err := os.ReadFile(filepath.Join(dir, "token"))
+	fc, _, err := loadConfig(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
 	client := &http.Client{Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}}
 	req, _ := http.NewRequest("GET", fmt.Sprintf("https://127.0.0.1:%d/api/events", port), nil)
-	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(string(token)))
+	req.Header.Set("Authorization", "Bearer "+fc.Token)
 	resp, err := client.Do(req)
 	if err != nil {
 		t.Fatal(err)
@@ -201,5 +190,27 @@ func TestRunClosesIdleConnections(t *testing.T) {
 	conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	if _, err := br.ReadByte(); err != io.EOF {
 		t.Errorf("idle connection not closed by the server: read returned %v, want EOF", err)
+	}
+}
+
+// Without --addr, the listen address comes from config.json.
+func TestRunUsesConfigAddr(t *testing.T) {
+	dir := t.TempDir()
+	port := freePort(t)
+	writeConfig(t, dir, fmt.Sprintf(`{"token":"%s","addr":"127.0.0.1:%d"}`, goodToken, port))
+	out := &syncBuffer{}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- Run(ctx, []string{"--config-dir", dir}, out) }()
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(out.String(), "listening on") && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	cancel()
+	if err := <-done; err != nil {
+		t.Fatalf("Run: %v; output:\n%s", err, out.String())
+	}
+	if want := fmt.Sprintf("listening on https://127.0.0.1:%d", port); !strings.Contains(out.String(), want) {
+		t.Errorf("output lacks %q:\n%s", want, out.String())
 	}
 }
