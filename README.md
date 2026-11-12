@@ -69,67 +69,25 @@ can list and manage them and drive their terminals. BetterScreen ships the API
 only, no web UI.
 
 ```
-betterscreen serve [--addr :8443] [--config-dir DIR] [--allow-origin URL]...
+betterscreen serve [--addr :8443] [--config-dir ~/.betterscreen] [--allow-origin URL]...
 ```
 
-| Flag | Default | Meaning |
-| --- | --- | --- |
-| `--addr` | `:8443` | Listen address. |
-| `--config-dir` | `$XDG_CONFIG_HOME/betterscreen`, else `~/.config/betterscreen` | Token and TLS material. |
-| `--allow-origin` | none | Origin allowed by CORS and the WebSocket check (repeatable), e.g. `https://front.lan`. |
+Configuration lives in `~/.betterscreen/config.json`, created on first start
+with a generated token (printed once):
 
-On first start the service generates, in the config directory:
-
-- `token` (mode 0600) — printed once. Every request needs it.
-- `cert.pem` / `key.pem` — a self-signed certificate. Its SHA-256 fingerprint
-  is printed at every start; check it when your browser asks to trust it.
-  Delete both files to regenerate them (e.g. after the machine's IP changes).
-
-To run it as a user service:
-
-```
-cp contrib/betterscreen.service ~/.config/systemd/user/
-systemctl --user enable --now betterscreen
-journalctl --user -u betterscreen   # first start prints the token here
+```json
+{
+  "token": "...",
+  "addr": ":8443",
+  "allowed_origins": ["https://front.lan"]
+}
 ```
 
-### Endpoints
+Flags override the file. The self-signed TLS certificate (`cert.pem`,
+`key.pem`) sits next to it.
 
-All requests carry `Authorization: Bearer <token>`. Errors are
-`{"error": "..."}`.
-
-| Method | Path | Body | Success |
-| --- | --- | --- | --- |
-| GET | `/api/sessions` | — | `200` list of sessions |
-| POST | `/api/sessions` | `{"name": "work"}` | `201` the created session (`409` if the name is taken) |
-| DELETE | `/api/sessions/{id}` | — | `204` |
-| GET | `/api/sessions/{id}/windows` | — | `200` windows with `pwd` and `proc` |
-| POST | `/api/sessions/{id}/detach` | — | `204` |
-| POST | `/api/sessions/{id}/select` | `{"window": 2}` | `204` |
-| GET | `/api/events` | — | Server-Sent Events: `sessions` with the full list on connect and on every change |
-| GET | `/ws/sessions/{id}?mode=share\|take&window=N` | — | WebSocket terminal stream |
-
-A session is `{"id": "3378954.work", "pid": 3378954, "name": "work", "state": "attached"}`.
-
-The WebSocket carries raw terminal bytes in binary frames both ways; the client
-sends `{"type": "resize", "cols": 120, "rows": 40}` as a text frame on resize.
-`share` (default) joins the session next to its other displays; `take`
-detaches them first, so the window follows the client's size. Without
-`window`, the client lands on the session's current window. When the screen
-client exits the socket closes with code `4000`.
-
-Browsers cannot set headers on a WebSocket: offer the subprotocols
-`["betterscreen", "token.<token>"]` instead. The token is never accepted in the
-URL.
-
-### Front-end constraints
-
-- Read `/api/events` with `fetch()` and a streamed body (for example
-  `@microsoft/fetch-event-source`): the native `EventSource` cannot send the
-  `Authorization` header.
-- Keep mouse reporting off in the terminal emulator (xterm.js). GNU Screen
-  corrupts SGR mouse reports, so mouse movements would be typed into the
-  session as text.
+See [API.md](API.md) for the configuration, authentication, every route, the
+event stream, the terminal WebSocket protocol and the front-end constraints.
 
 ## Keybindings
 
